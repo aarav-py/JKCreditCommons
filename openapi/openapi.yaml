@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: JK Credit Commons API
+  version: 0.1.0
+  description: Lender-agnostic APIs for borrower discovery, consent initiation, and credential retrieval.
+servers:
+  - url: https://api.jkcreditcommons.gov
+security:
+  - OAuth2: []
+paths:
+  /discovery:
+    get:
+      summary: Anonymised borrower discovery
+      parameters:
+        - in: query
+          name: district
+          schema:
+            type: string
+        - in: query
+          name: sector
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of anonymised borrower references
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiscoveryResult'
+      security:
+        - OAuth2: []
+  /consents:
+    post:
+      summary: Initiate consent request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+      responses:
+        '201':
+          description: Consent request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResponse'
+      security:
+        - OAuth2: []
+  /credentials/crc:
+    get:
+      summary: Retrieve CRC credential post-consent
+      parameters:
+        - in: query
+          name: consent_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verifiable Credential JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialResponse'
+      security:
+        - OAuth2: []
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.jkcreditcommons.gov/oauth/token
+          scopes: {}
+  schemas:
+    DiscoveryResult:
+      type: object
+      properties:
+        borrower_reference:
+          type: string
+        district:
+          type: string
+        sector:
+          type: string
+    ConsentRequest:
+      type: object
+      required: [borrower_reference, scope, purpose, duration_days]
+      properties:
+        borrower_reference:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        purpose:
+          type: string
+        duration_days:
+          type: integer
+        assisted_by:
+          type: string
+    ConsentResponse:
+      type: object
+      properties:
+        consent_id:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    CredentialResponse:
+      type: object
+      properties:
+        jwt_vc:
+          type: string
